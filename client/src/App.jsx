@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
+import PublicProfilePage from './pages/PublicProfilePage.jsx';
 
 // 라우팅 구성. 인증 상태는 AuthProvider 가 전역으로 제공한다.
 export default function App() {
@@ -17,6 +18,8 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/login" element={<LoginPage />} />
+          {/* 공개 프로필(로그인 불필요) */}
+          <Route path="/p/:shortLink" element={<PublicProfilePage />} />
           {/* 로그인 필요 라우트 */}
           <Route
             path="/dashboard"

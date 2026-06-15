@@ -73,7 +73,8 @@ router.post(
       const [dupNick] = await conn.query(
         'SELECT 1 FROM users WHERE nickname = ? LIMIT 1',
         [trimmedNickname],
-      );
+      ); //닉네임 중복 확인
+
       if (dupNick.length > 0) {
         await conn.rollback();
         return res.status(409).json({ error: '이미 사용 중인 닉네임입니다.' });
@@ -89,7 +90,7 @@ router.post(
         `INSERT INTO users (email, password_hash, nickname, short_link)
          VALUES (?, ?, ?, ?)`,
         [email, passwordHash, trimmedNickname, shortLink],
-      );
+      ); //회원가입
 
       await conn.commit();
 
@@ -135,7 +136,8 @@ router.post(
     const [rows] = await pool.query(
       'SELECT * FROM users WHERE email = ? LIMIT 1',
       [email],
-    );
+    ); //로그인 
+
     const user = rows[0];
 
     // 계정 열거(account enumeration) 방지:
@@ -183,12 +185,81 @@ router.get(
     const [rows] = await pool.query(
       'SELECT * FROM users WHERE id = ? LIMIT 1',
       [req.session.userId],
-    );
+    ); //내 정보 (id로)
+
     if (rows.length === 0) {
       // 세션은 있으나 사용자가 삭제된 경우: 세션을 정리하고 401.
-      req.session.destroy(() => {});
+      req.session.destroy(() => { });
       return res.status(401).json({ error: '로그인이 필요합니다.' });
     }
+    res.json({ user: toPublicUser(rows[0]) });
+  }),
+);
+
+// ---------------------------------------------------------------------
+// PATCH /api/auth/me : 프로필 수정(닉네임/소개글/테마색/프로필이미지)
+//   전달된 필드만 갱신. 컬럼명은 코드에서 고정(화이트리스트)하고 값만 ? 바인딩.
+// ---------------------------------------------------------------------
+router.patch(
+  '/me',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const userId = req.session.userId;
+    const body = req.body ?? {};
+    const fields = [];
+    const values = [];
+
+    if ('nickname' in body) {
+      const nick = String(body.nickname ?? '').trim();
+      if (nick.length < 2 || nick.length > 30) {
+        return res.status(400).json({ error: '닉네임은 2~30자여야 합니다.' });
+      }
+      //닉네임 중복 확인
+      // 자기 자신을 제외한 닉네임 중복 확인(최종 보증은 UNIQUE 제약).
+      const [dup] = await pool.query(
+        'SELECT 1 FROM users WHERE nickname = ? AND id <> ? LIMIT 1',
+        [nick, userId],
+      );
+      if (dup.length > 0) return res.status(409).json({ error: '이미 사용 중인 닉네임입니다.' });
+      fields.push('nickname = ?');
+      values.push(nick);
+    }
+
+    if ('bio' in body) {
+      const bio = body.bio == null ? '' : String(body.bio);
+      if (bio.length > 500) return res.status(400).json({ error: '소개글은 500자 이하여야 합니다.' });
+      fields.push('bio = ?');
+      values.push(bio.trim() ? bio : null);
+    }
+
+    if ('themeColor' in body) {
+      const color = String(body.themeColor ?? '');
+      if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
+        return res.status(400).json({ error: '올바른 색상(HEX) 형식이 아닙니다.' });
+      }
+      fields.push('theme_color = ?');
+      values.push(color);
+    }
+
+    if ('profileImageUrl' in body) {
+      const url = body.profileImageUrl == null ? null : String(body.profileImageUrl).trim();
+      if (url && url.length > 512) return res.status(400).json({ error: '이미지 URL이 너무 깁니다.' });
+      fields.push('profile_image_url = ?');
+      values.push(url || null);
+    }
+
+    if (fields.length === 0) return res.status(400).json({ error: '수정할 내용이 없습니다.' });
+
+    try {
+      await pool.query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, [...values, userId]); //프로필 수정
+    } catch (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ error: '이미 사용 중인 닉네임입니다.' });
+      }
+      throw err;
+    }
+
+    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]); //수정된 정보 조회
     res.json({ user: toPublicUser(rows[0]) });
   }),
 );

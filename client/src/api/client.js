@@ -37,6 +37,22 @@ export const api = {
   deleteBlock: (id) => request(`/blocks/${id}`, { method: 'DELETE' }),
   reorderBlocks: (orderedIds) => request('/blocks/reorder', { method: 'PUT', body: { orderedIds } }),
 
+  // 공개 프로필(로그인 불필요). 조회 시 서버가 조회수를 +1 한다.
+  getPublicProfile: (shortLink) => request(`/p/${encodeURIComponent(shortLink)}`),
+  // 링크 클릭 트래킹(실패해도 페이지 이동을 막지 않도록 호출부에서 무시).
+  trackClick: (shortLink, blockId) =>
+    request(`/p/${encodeURIComponent(shortLink)}/blocks/${blockId}/click`, { method: 'POST' }),
+
+  // 내 통계(총 조회수 + 최근 7일 + 인기 링크 TOP5)
+  getStats: () => request('/stats'),
+
+  // 프로필 수정(닉네임/소개글/테마색/프로필이미지) — 전달한 필드만 갱신
+  updateProfile: (payload) => request('/auth/me', { method: 'PATCH', body: payload }),
+
+  // 문의함
+  getInquiries: () => request('/inquiries'),
+  createInquiry: (payload) => request('/inquiries', { method: 'POST', body: payload }),
+
   // 이미지 업로드(멀티파트). FormData 사용 시 Content-Type 은 브라우저가 설정하므로 직접 지정하지 않는다.
   uploadImage: async (file) => {
     const fd = new FormData();

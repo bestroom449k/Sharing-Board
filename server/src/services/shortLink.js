@@ -28,7 +28,8 @@ export async function generateUniqueShortLink(maxTries = 5) {
     const [rows] = await pool.query(
       'SELECT 1 FROM users WHERE short_link = ? LIMIT 1',
       [code],
-    );
+    ); //short_link 중복 확인
+
     if (rows.length === 0) return code;
   }
   // 극히 드문 연속 충돌 시 길이를 늘려 한 번 더 시도.

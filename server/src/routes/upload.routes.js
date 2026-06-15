@@ -41,7 +41,7 @@ router.post(
     // 로그인한 유저의 닉네임을 폴더명으로 사용한다(images/{유저이름}/...).
     const [rows] = await pool.query('SELECT nickname FROM users WHERE id = ? LIMIT 1', [
       req.session.userId,
-    ]);
+    ]); //파일 업로드 시 닉네임을 가져오는 조회
     if (rows.length === 0) return res.status(401).json({ error: '로그인이 필요합니다.' });
 
     // 업로드 전 압축(리사이즈·재인코딩). 실패 시 내부에서 원본을 그대로 돌려준다.

@@ -67,7 +67,7 @@ router.get(
     const [rows] = await pool.query(
       'SELECT * FROM blocks WHERE user_id = ? ORDER BY position ASC, id ASC',
       [req.session.userId],
-    );
+    ); //내 블록 목록 조회
     res.json({ blocks: rows.map(toBlock), max: MAX_BLOCKS });
   }),
 );
@@ -96,7 +96,7 @@ router.post(
       const [[{ cnt }]] = await conn.query(
         'SELECT COUNT(*) AS cnt FROM blocks WHERE user_id = ? FOR UPDATE',
         [userId],
-      );
+      ); //블록 개수 확인
       if (cnt >= MAX_BLOCKS) {
         await conn.rollback();
         return res.status(400).json({ error: `블록은 최대 ${MAX_BLOCKS}개까지 만들 수 있습니다.` });
@@ -106,17 +106,17 @@ router.post(
       const [[{ pos }]] = await conn.query(
         'SELECT COALESCE(MAX(position), -1) + 1 AS pos FROM blocks WHERE user_id = ?',
         [userId],
-      );
+      ); //마지막 순서 조회
 
       const [result] = await conn.query(
         `INSERT INTO blocks (user_id, block_type, title, url, content, image_url, position)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [userId, type, v.value.title, v.value.url, v.value.content, v.value.imageUrl, pos],
-      );
+      );  // 블록 생성
 
       await conn.commit();
 
-      const [rows] = await pool.query('SELECT * FROM blocks WHERE id = ?', [result.insertId]);
+      const [rows] = await pool.query('SELECT * FROM blocks WHERE id = ?', [result.insertId]); //생성된 블록 조회
       return res.status(201).json({ block: toBlock(rows[0]) });
     } catch (err) {
       await conn.rollback();
@@ -150,7 +150,7 @@ router.put(
       const [own] = await conn.query(
         'SELECT id FROM blocks WHERE user_id = ? FOR UPDATE',
         [userId],
-      );
+      ); //내 블록 ID 조회
       const ownIds = new Set(own.map((r) => r.id));
 
       // 전달된 ID가 내 블록 전체와 정확히 일치하는 순열인지 검증(남의 블록/누락 차단).
@@ -167,7 +167,7 @@ router.put(
         await conn.query(
           'UPDATE blocks SET position = ? WHERE id = ? AND user_id = ?',
           [i, orderedIds[i], userId],
-        );
+        ); //순서 변경
       }
 
       await conn.commit();
@@ -197,7 +197,7 @@ router.put(
     const [rows] = await pool.query(
       'SELECT block_type FROM blocks WHERE id = ? AND user_id = ?',
       [id, userId],
-    );
+    ); //블록 타입/소유권 확인
     if (rows.length === 0) return res.status(404).json({ error: '블록을 찾을 수 없습니다.' });
 
     const v = validateBlockInput(rows[0].block_type, req.body ?? {}, { partial: true });
@@ -229,9 +229,9 @@ router.put(
     await pool.query(
       `UPDATE blocks SET ${setClause} WHERE id = ? AND user_id = ?`,
       [...values, id, userId],
-    );
+    ); //블록 수정
 
-    const [updated] = await pool.query('SELECT * FROM blocks WHERE id = ?', [id]);
+    const [updated] = await pool.query('SELECT * FROM blocks WHERE id = ?', [id]); //수정된 블록 조회
     res.json({ block: toBlock(updated[0]) });
   }),
 );
@@ -249,7 +249,8 @@ router.delete(
     const [result] = await pool.query(
       'DELETE FROM blocks WHERE id = ? AND user_id = ?',
       [id, req.session.userId],
-    );
+    ); //	블록 삭제 (WHERE id=? AND user_id=? 로 소유권 검증)
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: '블록을 찾을 수 없습니다.' });
     }

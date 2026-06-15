@@ -10,6 +10,9 @@ import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.routes.js';
 import blockRoutes from './routes/blocks.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
+import publicRoutes from './routes/public.routes.js';
+import statsRoutes from './routes/stats.routes.js';
+import inquiriesRoutes from './routes/inquiries.routes.js';
 import { UPLOADS_LOCAL_DIR, STORAGE_PREFIX } from './services/storage.js';
 
 const MySQLStore = expressMySQLSession(session);
@@ -73,6 +76,9 @@ export function createApp() {
   app.use('/api/auth', authRoutes);
   app.use('/api/blocks', blockRoutes);
   app.use('/api/upload', uploadRoutes);
+  app.use('/api/p', publicRoutes); // 공개 프로필(로그인 불필요) + 조회수/클릭 트래킹
+  app.use('/api/stats', statsRoutes); // 내 통계(로그인 필요)
+  app.use('/api/inquiries', inquiriesRoutes); // 문의함(로그인 필요)
 
   // 일치하는 라우트가 없을 때 404.
   app.use((req, res) => res.status(404).json({ error: '요청한 경로를 찾을 수 없습니다.' }));

@@ -60,8 +60,11 @@ export function AuthProvider({ children }) {
     }
   }, [persist]);
 
+  // 프로필 수정 등으로 바뀐 사용자 정보를 전역 상태 + 캐시에 반영.
+  const updateUser = useCallback((nextUser) => persist(nextUser), [persist]);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
