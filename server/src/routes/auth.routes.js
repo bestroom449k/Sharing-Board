@@ -8,6 +8,7 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 import { requireAuth } from '../middleware/auth.js';
 import { isValidEmailFormat, verifyEmailDeliverable } from '../services/emailVerify.js';
 import { generateUniqueShortLink } from '../services/shortLink.js';
+import { toDesign } from '../services/userView.js';
 
 const router = Router();
 
@@ -20,8 +21,9 @@ function toPublicUser(row) {
     shortLink: row.short_link,
     profileImageUrl: row.profile_image_url,
     bio: row.bio,
-    themeColor: row.theme_color,
     createdAt: row.created_at,
+    // 디자인 설정(테마색·레이아웃·블록·배경·한줄공지·SNS 등)
+    ...toDesign(row),
   };
 }
 
@@ -246,6 +248,117 @@ router.patch(
       if (url && url.length > 512) return res.status(400).json({ error: '이미지 URL이 너무 깁니다.' });
       fields.push('profile_image_url = ?');
       values.push(url || null);
+    }
+
+    // ---- 디자인 설정 필드(전달된 것만 갱신, 컬럼명은 코드 고정) ----
+    const HEX = /^#[0-9a-fA-F]{6}$/;
+    const ENUMS = {
+      profileAlign: { col: 'profile_align', allow: ['left', 'center'] },
+      profileFontSize: { col: 'profile_font_size', allow: ['small', 'normal', 'large'] },
+      blockShape: { col: 'block_shape', allow: ['square', 'round', 'pill'] },
+      blockAlign: { col: 'block_align', allow: ['left', 'center'] },
+      bgType: { col: 'bg_type', allow: ['color', 'image'] },
+    };
+    for (const [key, { col, allow }] of Object.entries(ENUMS)) {
+      if (key in body) {
+        if (!allow.includes(body[key])) {
+          return res.status(400).json({ error: `${key} 값이 올바르지 않습니다.` });
+        }
+        fields.push(`${col} = ?`);
+        values.push(body[key]);
+      }
+    }
+
+    const HEX_COLS = {
+      blockColor: 'block_color',
+      bgColor: 'bg_color',
+      noticeTextColor: 'notice_text_color',
+      noticeBgColor: 'notice_bg_color',
+    };
+    for (const [key, col] of Object.entries(HEX_COLS)) {
+      if (key in body) {
+        const c = String(body[key] ?? '');
+        if (!HEX.test(c)) return res.status(400).json({ error: '올바른 색상(HEX) 형식이 아닙니다.' });
+        fields.push(`${col} = ?`);
+        values.push(c);
+      }
+    }
+
+    const URL_COLS = { coverImageUrl: 'cover_image_url', bgImageUrl: 'bg_image_url' };
+    for (const [key, col] of Object.entries(URL_COLS)) {
+      if (key in body) {
+        const url = body[key] == null ? null : String(body[key]).trim();
+        if (url && url.length > 512) return res.status(400).json({ error: '이미지 URL이 너무 깁니다.' });
+        fields.push(`${col} = ?`);
+        values.push(url || null);
+      }
+    }
+
+    if ('profileLayout' in body) {
+      const allow = ['classic', 'cover', 'overlap', 'hero'];
+      if (!allow.includes(body.profileLayout)) {
+        return res.status(400).json({ error: '레이아웃 값이 올바르지 않습니다.' });
+      }
+      fields.push('profile_layout = ?');
+      values.push(body.profileLayout);
+    }
+
+    if ('noticeText' in body) {
+      const t = body.noticeText == null ? null : String(body.noticeText);
+      if (t && t.length > 100) return res.status(400).json({ error: '공지는 100자 이하여야 합니다.' });
+      fields.push('notice_text = ?');
+      values.push(t && t.trim() ? t : null);
+    }
+
+    // 비울 수 있는(자동) 글씨 색상: null/'' 이면 NULL(자동 대비), 아니면 HEX 검증.
+    const NULLABLE_HEX = {
+      blockTextColor: 'block_text_color',
+      profileTextColor: 'profile_text_color',
+      businessTextColor: 'business_text_color',
+    };
+    for (const [key, col] of Object.entries(NULLABLE_HEX)) {
+      if (key in body) {
+        if (body[key] == null || body[key] === '') {
+          fields.push(`${col} = ?`);
+          values.push(null);
+        } else {
+          const c = String(body[key]);
+          if (!HEX.test(c)) return res.status(400).json({ error: '올바른 색상(HEX) 형식이 아닙니다.' });
+          fields.push(`${col} = ?`);
+          values.push(c);
+        }
+      }
+    }
+
+    if ('businessUrl' in body) {
+      const url = body.businessUrl == null ? null : String(body.businessUrl).trim();
+      if (url && url.length > 2048) return res.status(400).json({ error: '링크가 너무 깁니다.' });
+      fields.push('business_url = ?');
+      values.push(url || null);
+    }
+
+    const BOOL_COLS = { businessEnabled: 'business_enabled', searchEnabled: 'search_enabled' };
+    for (const [key, col] of Object.entries(BOOL_COLS)) {
+      if (key in body) {
+        if (typeof body[key] !== 'boolean') {
+          return res.status(400).json({ error: `${key} 는 true/false 여야 합니다.` });
+        }
+        fields.push(`${col} = ?`);
+        values.push(body[key] ? 1 : 0);
+      }
+    }
+
+    if ('snsLinks' in body) {
+      const arr = Array.isArray(body.snsLinks) ? body.snsLinks : [];
+      if (arr.length > 10) return res.status(400).json({ error: 'SNS 링크는 최대 10개입니다.' });
+      const clean = [];
+      for (const it of arr) {
+        const platform = String(it?.platform ?? '').trim().slice(0, 20);
+        const url = String(it?.url ?? '').trim().slice(0, 512);
+        if (url) clean.push({ platform, url });
+      }
+      fields.push('sns_links = ?');
+      values.push(JSON.stringify(clean));
     }
 
     if (fields.length === 0) return res.status(400).json({ error: '수정할 내용이 없습니다.' });

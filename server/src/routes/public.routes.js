@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { toDesign } from '../services/userView.js';
 
 const router = Router();
 
@@ -14,9 +15,10 @@ function toPublicProfile(u) {
   return {
     nickname: u.nickname,
     bio: u.bio,
-    themeColor: u.theme_color,
     profileImageUrl: u.profile_image_url,
     shortLink: u.short_link,
+    // 디자인 설정(레이아웃·블록·배경·한줄공지·SNS 등) — 공개 페이지 렌더에 사용
+    ...toDesign(u),
   };
 }
 

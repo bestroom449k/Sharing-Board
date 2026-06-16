@@ -25,6 +25,28 @@ CREATE TABLE IF NOT EXISTS users (
   profile_image_url VARCHAR(512) NULL,
   bio               VARCHAR(500) NULL,                       -- 소개글
   theme_color       CHAR(7)      NOT NULL DEFAULT '#3B82F6', -- HEX 테마 색상
+  -- ----- 공개 프로필 디자인 설정(대시보드 '디자인' 탭에서 편집) -----
+  cover_image_url   VARCHAR(512) NULL,                                 -- 커버(배너) 이미지
+  profile_layout    VARCHAR(20)  NOT NULL DEFAULT 'classic',           -- 프로필/커버 배치 레이아웃 4종
+  profile_align     ENUM('left','center') NOT NULL DEFAULT 'center',   -- 프로필 정렬
+  profile_font_size ENUM('small','normal','large') NOT NULL DEFAULT 'normal', -- 프로필 글꼴 크기
+  sns_links         JSON NULL,                                         -- SNS 링크 목록 [{platform,url}]
+  block_shape       ENUM('square','round','pill') NOT NULL DEFAULT 'round', -- 블록 모양
+  block_align       ENUM('left','center') NOT NULL DEFAULT 'left',     -- 블록 정렬
+  block_color       CHAR(7)      NOT NULL DEFAULT '#FFFFFF',           -- 블록 배경색
+  bg_type           ENUM('color','image') NOT NULL DEFAULT 'color',    -- 배경 종류
+  bg_color          CHAR(7)      NOT NULL DEFAULT '#F4F4F6',           -- 배경 색상
+  bg_image_url      VARCHAR(512) NULL,                                 -- 배경 이미지
+  notice_text       VARCHAR(100) NULL,                                 -- 한줄 공지 문구
+  notice_text_color CHAR(7)      NOT NULL DEFAULT '#1C1C28',           -- 한줄 공지 글씨색
+  notice_bg_color   CHAR(7)      NOT NULL DEFAULT '#FFFFFF',           -- 한줄 공지 배경색
+  business_enabled  TINYINT(1)   NOT NULL DEFAULT 0,                   -- '비즈니스 제안' 버튼 표시 여부
+  business_url      VARCHAR(2048) NULL,                                -- '비즈니스 제안' 버튼이 여는 링크
+  search_enabled    TINYINT(1)   NOT NULL DEFAULT 0,                   -- 방문자 검색 기능 사용 여부
+  -- 글씨 색상(미설정 NULL 이면 배경 대비로 자동 결정)
+  block_text_color    CHAR(7) NULL,                                    -- 블록 글씨 색상
+  profile_text_color  CHAR(7) NULL,                                    -- 프로필(이름/소개) 글씨 색상
+  business_text_color CHAR(7) NULL,                                    -- 비즈니스 제안 버튼 글씨 색상
   -- 비정규화 누적 조회수. 공개 페이지 방문마다 +1 하여 통계 조회 비용을 낮춘다.
   total_views       BIGINT UNSIGNED NOT NULL DEFAULT 0,
   created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

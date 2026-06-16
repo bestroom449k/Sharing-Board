@@ -6,7 +6,7 @@ import BlockCard from '../components/blocks/BlockCard.jsx';
 import PhonePreview from '../components/blocks/PhonePreview.jsx';
 import StatsPanel from '../components/StatsPanel.jsx';
 import DashboardMenu from '../components/DashboardMenu.jsx';
-import ProfileEditor from '../components/ProfileEditor.jsx';
+import DesignEditor from '../components/DesignEditor.jsx';
 import InquiriesPanel from '../components/InquiriesPanel.jsx';
 
 const SECTION_TITLES = {
@@ -27,6 +27,8 @@ export default function DashboardPage() {
   const [showModal, setShowModal] = useState(false);
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  // 디자인 편집 중인 미리보기 초안(저장 전 실시간 반영용)
+  const [designDraft, setDesignDraft] = useState(null);
 
   const publicUrl = `${window.location.origin}/p/${user.shortLink}`;
 
@@ -61,6 +63,7 @@ export default function DashboardPage() {
 
   const openSection = (key) => {
     setSection(key);
+    setDesignDraft(null);
     if (key === 'stats') loadStats();
   };
 
@@ -215,9 +218,16 @@ export default function DashboardPage() {
 
           {section === 'design' && (
             <div className="ipd-design-grid">
-              <ProfileEditor user={user} onSaved={updateUser} />
+              <DesignEditor
+                user={user}
+                onDraft={setDesignDraft}
+                onSaved={(u) => {
+                  updateUser(u);
+                  setDesignDraft(null);
+                }}
+              />
               <div className="ipd-design-preview">
-                <PhonePreview user={user} blocks={blocks} />
+                <PhonePreview user={designDraft || user} blocks={blocks} />
               </div>
             </div>
           )}
