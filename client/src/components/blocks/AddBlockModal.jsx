@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ImageUploader from './ImageUploader.jsx';
+import BlockStylePicker from './BlockStylePicker.jsx';
 
 const BLOCK_TYPES = [
   {
@@ -44,7 +45,7 @@ const BLOCK_TYPES = [
   },
 ];
 
-const EMPTY = { title: '', url: '', content: '', imageUrl: null };
+const EMPTY = { title: '', url: '', content: '', imageUrl: null, style: 'thumbnail' };
 
 export default function AddBlockModal({ onCreate, onClose, disabled }) {
   const [step, setStep] = useState('type');
@@ -86,6 +87,7 @@ export default function AddBlockModal({ onCreate, onClose, disabled }) {
         url: form.url.trim() || null,
         content: selectedType === 'text' ? form.content : null,
         imageUrl: form.imageUrl || null,
+        style: form.style,
       });
     } catch (err) {
       setError(err.message);
@@ -151,6 +153,13 @@ export default function AddBlockModal({ onCreate, onClose, disabled }) {
             {selectedType === 'link' && (
               <>
                 <div className="mf-field">
+                  <label className="mf-label">스타일 <span className="mf-req">*</span></label>
+                  <BlockStylePicker
+                    value={form.style}
+                    onChange={(s) => setForm((f) => ({ ...f, style: s }))}
+                  />
+                </div>
+                <div className="mf-field">
                   <label className="mf-label">연결할 주소 <span className="mf-req">*</span></label>
                   <input
                     className="mf-input"
@@ -173,13 +182,15 @@ export default function AddBlockModal({ onCreate, onClose, disabled }) {
                     rows={3}
                   />
                 </div>
-                <div className="mf-field">
-                  <label className="mf-label">이미지 <span className="mf-req">*</span></label>
-                  <ImageUploader
-                    value={form.imageUrl}
-                    onChange={(url) => setForm((f) => ({ ...f, imageUrl: url }))}
-                  />
-                </div>
+                {form.style !== 'simple' && (
+                  <div className="mf-field">
+                    <label className="mf-label">이미지 <span className="mf-optional">(선택)</span></label>
+                    <ImageUploader
+                      value={form.imageUrl}
+                      onChange={(url) => setForm((f) => ({ ...f, imageUrl: url }))}
+                    />
+                  </div>
+                )}
               </>
             )}
 

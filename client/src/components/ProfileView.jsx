@@ -142,18 +142,63 @@ export default function ProfileView({ profile, blocks, onBlockClick }) {
                 </div>
               );
             }
+            const st = b.style || 'thumbnail';
+            const label = b.title || b.url;
+            const common = {
+              key: b.id,
+              href: b.url,
+              target: '_blank',
+              rel: 'noreferrer',
+              onClick: () => onBlockClick && onBlockClick(b),
+            };
+
+            // 배경 스타일: 이미지를 블록 배경으로 깔고 글씨를 위에 올린다.
+            if (st === 'background' && b.imageUrl) {
+              return (
+                <a
+                  {...common}
+                  className="pv-block pv-block--link pv-block--bg"
+                  style={{ borderRadius: radius, backgroundImage: `url(${b.imageUrl})` }}
+                >
+                  <span className="pv-bg-scrim" />
+                  <span className="pv-bg-label">{label}</span>
+                </a>
+              );
+            }
+            // 카드 스타일: 이미지를 위에 크게, 글씨를 아래에.
+            if (st === 'card') {
+              return (
+                <a
+                  {...common}
+                  className="pv-block pv-block--link pv-block--card"
+                  style={{ background: blockColor, borderRadius: radius, color: blockText }}
+                >
+                  {b.imageUrl && <img className="pv-card-img" src={b.imageUrl} alt="" />}
+                  <span className="pv-card-label">{label}</span>
+                </a>
+              );
+            }
+            // 심플 스타일: 이미지 없이 글씨만.
+            if (st === 'simple') {
+              return (
+                <a
+                  {...common}
+                  className="pv-block pv-block--link pv-block--simple"
+                  style={{ background: blockColor, borderRadius: radius, color: blockText }}
+                >
+                  <span className="pv-block-label">{label}</span>
+                </a>
+              );
+            }
+            // 썸네일 스타일(기본): 작은 이미지 + 글씨.
             return (
               <a
-                key={b.id}
-                className="pv-block pv-block--link"
-                href={b.url}
-                target="_blank"
-                rel="noreferrer"
+                {...common}
+                className="pv-block pv-block--link pv-block--thumbnail"
                 style={{ background: blockColor, borderRadius: radius, color: blockText }}
-                onClick={() => onBlockClick && onBlockClick(b)}
               >
                 {b.imageUrl && <img className="pv-block-thumb" src={b.imageUrl} alt="" />}
-                <span className="pv-block-label">{b.title || b.url}</span>
+                <span className="pv-block-label">{label}</span>
               </a>
             );
           })}

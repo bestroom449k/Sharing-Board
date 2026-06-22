@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ImageUploader from './ImageUploader.jsx';
+import BlockStylePicker from './BlockStylePicker.jsx';
 
 const ICONS = { link: '🔗', text: '📝', video: '🎬' };
 const TYPE_LABELS = { link: '링크', text: '텍스트', video: '동영상' };
@@ -12,6 +13,7 @@ export default function BlockCard({ block, index, isFirst, isLast, onUpdate, onD
     url: block.url ?? '',
     content: block.content ?? '',
     imageUrl: block.imageUrl ?? null,
+    style: block.style ?? 'thumbnail',
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +26,10 @@ export default function BlockCard({ block, index, isFirst, isLast, onUpdate, onD
     try {
       // 타입별로 의미 있는 필드만 서버에 보낸다. 이미지는 모든 타입 공통.
       const payload = { title: form.title.trim() || null, imageUrl: form.imageUrl ?? null };
-      if (block.type === 'link' || block.type === 'video') payload.url = form.url.trim() || null;
+      if (block.type === 'link' || block.type === 'video') {
+        payload.url = form.url.trim() || null;
+        payload.style = form.style;
+      }
       if (block.type === 'text') payload.content = form.content;
       await onUpdate(block.id, payload);
       setEditing(false);
@@ -86,15 +91,24 @@ export default function BlockCard({ block, index, isFirst, isLast, onUpdate, onD
               onChange={onChange}
             />
             {(block.type === 'link' || block.type === 'video') && (
+              <BlockStylePicker
+                value={form.style}
+                onChange={(s) => setForm((f) => ({ ...f, style: s }))}
+              />
+            )}
+            {(block.type === 'link' || block.type === 'video') && (
               <input name="url" type="url" placeholder="URL" value={form.url} onChange={onChange} />
             )}
             {block.type === 'text' && (
               <textarea name="content" rows={3} value={form.content} onChange={onChange} />
             )}
-            <ImageUploader
-              value={form.imageUrl}
-              onChange={(url) => setForm((f) => ({ ...f, imageUrl: url }))}
-            />
+            {/* 심플 스타일은 이미지를 표시하지 않으므로 첨부 칸을 숨긴다. */}
+            {(block.type === 'text' || form.style !== 'simple') && (
+              <ImageUploader
+                value={form.imageUrl}
+                onChange={(url) => setForm((f) => ({ ...f, imageUrl: url }))}
+              />
+            )}
             <div className="block-edit-actions">
               <button type="button" className="btn btn-primary" disabled={busy} onClick={save}>
                 저장
@@ -111,6 +125,7 @@ export default function BlockCard({ block, index, isFirst, isLast, onUpdate, onD
                     url: block.url ?? '',
                     content: block.content ?? '',
                     imageUrl: block.imageUrl ?? null,
+                    style: block.style ?? 'thumbnail',
                   });
                 }}
               >

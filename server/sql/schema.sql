@@ -69,6 +69,8 @@ CREATE TABLE IF NOT EXISTS blocks (
   url         VARCHAR(2048) NULL,   -- link / video 타입에서 사용
   content     TEXT          NULL,   -- text 타입 본문
   image_url   VARCHAR(512)  NULL,   -- 블록 첨부 이미지(클라우드 스토리지 URL)
+  -- 링크/동영상 블록 표시 스타일(썸네일/심플/카드/배경). text 타입은 무시.
+  link_style  ENUM('thumbnail','simple','card','background') NOT NULL DEFAULT 'thumbnail',
   position    INT NOT NULL DEFAULT 0, -- 대시보드에서의 표시 순서
   -- 비정규화 클릭수. '인기 링크 TOP 5' 집계를 단순 정렬로 처리하기 위함.
   click_count BIGINT UNSIGNED NOT NULL DEFAULT 0,

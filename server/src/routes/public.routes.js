@@ -31,6 +31,7 @@ function toPublicBlock(b) {
     url: b.url,
     content: b.content,
     imageUrl: b.image_url,
+    style: b.link_style,
   };
 }
 

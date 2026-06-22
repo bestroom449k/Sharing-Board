@@ -11,6 +11,8 @@ const router = Router();
 // 한 사용자가 만들 수 있는 블록 최대 개수(스펙: 최대 200개).
 const MAX_BLOCKS = 200;
 const BLOCK_TYPES = ['link', 'text', 'video'];
+// 링크/동영상 블록 표시 스타일.
+const BLOCK_STYLES = ['thumbnail', 'simple', 'card', 'background'];
 
 // 스키마 컬럼 길이에 맞춘 제한.
 const LIMITS = { title: 100, url: 2048, imageUrl: 512 };
@@ -24,6 +26,7 @@ function toBlock(row) {
     url: row.url,
     content: row.content,
     imageUrl: row.image_url,
+    style: row.link_style,
     position: row.position,
     clickCount: row.click_count,
     isActive: !!row.is_active,
@@ -86,6 +89,9 @@ router.post(
     const v = validateBlockInput(type, req.body ?? {});
     if (!v.ok) return res.status(400).json({ error: v.error });
 
+    // 표시 스타일(허용 목록 밖이면 기본 thumbnail).
+    const style = BLOCK_STYLES.includes(req.body?.style) ? req.body.style : 'thumbnail';
+
     const userId = req.session.userId;
 
     // 개수 제한 검사와 INSERT 를 한 트랜잭션으로 묶어 동시 요청에도 200개를 넘지 않게 한다.
@@ -109,9 +115,9 @@ router.post(
       ); //마지막 순서 조회
 
       const [result] = await conn.query(
-        `INSERT INTO blocks (user_id, block_type, title, url, content, image_url, position)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [userId, type, v.value.title, v.value.url, v.value.content, v.value.imageUrl, pos],
+        `INSERT INTO blocks (user_id, block_type, title, url, content, image_url, link_style, position)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, type, v.value.title, v.value.url, v.value.content, v.value.imageUrl, style, pos],
       );  // 블록 생성
 
       await conn.commit();
@@ -211,6 +217,7 @@ router.put(
       image_url: v.value.imageUrl,
     };
     if (typeof req.body?.isActive === 'boolean') map.is_active = req.body.isActive ? 1 : 0;
+    if (BLOCK_STYLES.includes(req.body?.style)) map.link_style = req.body.style;
 
     // 요청에 실제로 포함된 키만 갱신한다.
     const fields = Object.keys(map).filter((k) => {
@@ -219,6 +226,7 @@ router.put(
       if (k === 'content') return 'content' in req.body;
       if (k === 'image_url') return 'imageUrl' in req.body;
       if (k === 'is_active') return 'isActive' in req.body;
+      if (k === 'link_style') return 'style' in req.body;
       return false;
     });
     if (fields.length === 0) return res.status(400).json({ error: '수정할 내용이 없습니다.' });
