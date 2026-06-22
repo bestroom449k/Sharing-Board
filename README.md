@@ -63,7 +63,8 @@ DELETE
 UPDATE
 
 ## 실행 
-백엔드 npm run dev
+백엔드  cd "C:\Users\bestr\My_class\shcool\DB_project\Sharing Board\server"
+npm run dev
 
 프론트 cd "c:\Users\bestr\My_class\shcool\DB_project\Sharing Board\client"
 npm run dev

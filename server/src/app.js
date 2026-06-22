@@ -1,5 +1,8 @@
 // Express 애플리케이션 구성.
 // 보안 헤더(helmet) → CORS → JSON 파서 → 세션 → 라우트 → 에러 핸들러 순서로 둔다.
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -16,6 +19,11 @@ import inquiriesRoutes from './routes/inquiries.routes.js';
 import { UPLOADS_LOCAL_DIR, STORAGE_PREFIX } from './services/storage.js';
 
 const MySQLStore = expressMySQLSession(session);
+
+// 빌드된 React 정적 파일 경로(<repo>/client/dist). 존재하면 같은 서버에서 서빙한다.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const CLIENT_DIST = path.join(__dirname, '..', '..', 'client', 'dist');
+const SERVE_CLIENT = existsSync(path.join(CLIENT_DIST, 'index.html'));
 
 export function createApp() {
   const app = express();
@@ -80,7 +88,23 @@ export function createApp() {
   app.use('/api/stats', statsRoutes); // 내 통계(로그인 필요)
   app.use('/api/inquiries', inquiriesRoutes); // 문의함(로그인 필요)
 
-  // 일치하는 라우트가 없을 때 404.
+  // 운영(통합 배포): 빌드된 React 를 같은 서버에서 서빙하여 단일 도메인으로 동작.
+  // /api, /uploads, /images 외의 GET 요청은 SPA(index.html)로 폴백 → React Router 가 처리.
+  if (SERVE_CLIENT) {
+    app.use(express.static(CLIENT_DIST));
+    app.get('*', (req, res, next) => {
+      if (
+        req.path.startsWith('/api/') ||
+        req.path.startsWith('/uploads/') ||
+        req.path.startsWith(`/${STORAGE_PREFIX}/`)
+      ) {
+        return next();
+      }
+      res.sendFile(path.join(CLIENT_DIST, 'index.html'));
+    });
+  }
+
+  // 일치하는 라우트가 없을 때 404(주로 /api/* 미존재 경로).
   app.use((req, res) => res.status(404).json({ error: '요청한 경로를 찾을 수 없습니다.' }));
 
   // 마지막에 중앙 에러 핸들러.

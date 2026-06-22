@@ -1394,17 +1394,21 @@ a {
   font-size: 1rem;
 }
 
+/* 공개 페이지: 폰 미리보기와 동일한 PhoneScreen 을 가운데 배치(주변은 은은한 배경) */
 .pp-page {
   min-height: calc(100vh - 64px);
-  background: #f4f4f6;
+  background: linear-gradient(160deg, #ecebf6, #f4f4f6);
   display: flex;
-  flex-direction: column;
-}
-.pp-center {
-  flex: 1;
-  display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 36px 16px 60px;
+  padding: 24px 12px;
+}
+/* 공개용 폰: 미리보기보다 크게, 화면 높이에 맞춰 안에서 스크롤 */
+.phone-frame--live {
+  width: min(390px, 94vw);
+}
+.phone-frame--live .phone-screen {
+  height: min(760px, 82vh);
 }
 
 .pp-card {

@@ -1,0 +1,14 @@
+{
+  "name": "sharing-board",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sharing Board - 링크인바이오 (Express + MySQL + React, 통합 배포)",
+  "type": "module",
+  "scripts": {
+    "build": "npm --prefix server install && npm --prefix client install && npm --prefix client run build",
+    "start": "node server/src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

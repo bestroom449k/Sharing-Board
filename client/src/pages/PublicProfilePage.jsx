@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api/client.js';
-import ProfileView from '../components/ProfileView.jsx';
-import NoticeBar from '../components/NoticeBar.jsx';
+import PhoneScreen from '../components/PhoneScreen.jsx';
 
 // 공개 프로필 페이지 (/p/:shortLink). 로그인 없이 누구나 볼 수 있고,
 // 열릴 때 서버가 조회수를 +1 한다. 링크 클릭 시 클릭수도 트래킹한다.
@@ -41,22 +40,14 @@ export default function PublicProfilePage() {
     api.trackClick(shortLink, block.id).catch(() => {});
   };
 
-  const bgStyle =
-    profile.bgType === 'image' && profile.bgImageUrl
-      ? { backgroundImage: `url(${profile.bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-      : { background: profile.bgColor || '#f4f4f6' };
-
   return (
-    <div className="pp-page" style={bgStyle}>
-      <NoticeBar text={profile.noticeText} textColor={profile.noticeTextColor} bgColor={profile.noticeBgColor} />
-      <div className="pp-center">
-        <div className="pp-col">
-          <ProfileView profile={profile} blocks={blocks} onBlockClick={handleClick} />
-          <div className="pp-foot">
-            <span className="pp-foot-brand">Sharing Board</span>
-          </div>
-        </div>
-      </div>
+    <div className="pp-page">
+      <PhoneScreen
+        profile={profile}
+        blocks={blocks}
+        onBlockClick={handleClick}
+        className="phone-frame--live"
+      />
     </div>
   );
 }
